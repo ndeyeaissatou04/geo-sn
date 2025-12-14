@@ -1,0 +1,1272 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIG Web - Équipements Scolaires KOUPENTOUM</title>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+        }
+
+        /* Navigation */
+        .navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            height: 60px;
+        }
+
+        .navbar-brand {
+            font-weight: 600;
+            color: white !important;
+        }
+
+        /* Conteneur principal */
+        .main-container {
+            display: flex;
+            height: calc(100vh - 60px);
+            position: relative;
+        }
+
+        /* Panneau gauche */
+        .left-panel {
+            width: 320px;
+            background: white;
+            box-shadow: 2px 0 15px rgba(0,0,0,0.1);
+            overflow-y: auto;
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+
+        .left-panel.collapsed {
+            transform: translateX(-320px);
+        }
+
+        .panel-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .panel-content {
+            padding: 15px;
+        }
+
+        /* Panneau droit */
+        .right-panel {
+            width: 300px;
+            background: white;
+            box-shadow: -2px 0 15px rgba(0,0,0,0.1);
+            overflow-y: auto;
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+
+        .right-panel.collapsed {
+            transform: translateX(300px);
+        }
+
+        /* Carte */
+        #map {
+            flex: 1;
+        }
+
+        /* Toggle buttons */
+        .toggle-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: white;
+            border: none;
+            padding: 10px;
+            cursor: pointer;
+            z-index: 1001;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            border-radius: 4px;
+        }
+
+        .toggle-btn-left {
+            left: 0;
+            border-radius: 0 4px 4px 0;
+        }
+
+        .toggle-btn-right {
+            right: 0;
+            border-radius: 4px 0 0 4px;
+        }
+
+        /* Sections */
+        .section {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+        }
+
+        .section-title {
+            color: #667eea;
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Couches */
+        .layer-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            margin: 5px 0;
+            background: white;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .layer-item:hover {
+            background: #f0f0f0;
+            transform: translateX(5px);
+        }
+
+        .layer-symbol {
+            margin: 0 10px;
+        }
+
+        .symbol-point {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 0 4px rgba(0,0,0,0.3);
+        }
+
+        .symbol-line {
+            width: 24px;
+            height: 3px;
+            background: #fd7e14;
+        }
+
+        .symbol-polygon {
+            width: 20px;
+            height: 20px;
+            border: 2px solid;
+            background: rgba(255,255,255,0.3);
+        }
+
+        .layer-count {
+            margin-left: auto;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        /* Boutons */
+        .btn-modern {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-weight: 500;
+            transition: transform 0.2s;
+        }
+
+        .btn-modern:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        /* Requêtes */
+        .query-section {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+
+        .query-result {
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+
+        .result-item {
+            padding: 8px;
+            background: #f8f9fa;
+            margin: 5px 0;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        .result-item:hover {
+            background: #e9ecef;
+        }
+
+        /* Légende */
+        .legend-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 0;
+            font-size: 0.9rem;
+        }
+
+        /* Navigation icons */
+        .nav-icon-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: white;
+            font-size: 1.2rem;
+            padding: 8px 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border-radius: 6px;
+            margin: 0 3px;
+        }
+
+        .nav-icon-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.1);
+        }
+
+        /* Mesure controls */
+        .leaflet-control-measure {
+            background: white;
+            padding: 8px;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        /* Scrollbar personnalisé */
+        .left-panel::-webkit-scrollbar,
+        .right-panel::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .left-panel::-webkit-scrollbar-track,
+        .right-panel::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        .left-panel::-webkit-scrollbar-thumb,
+        .right-panel::-webkit-scrollbar-thumb {
+            background: #667eea;
+            border-radius: 3px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .left-panel, .right-panel {
+                position: absolute;
+                height: 100%;
+            }
+        }
+
+        .highlight-feature {
+            animation: pulse 1s ease-in-out;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">
+                <i class="bi bi-geo-alt-fill"></i>
+                SIG - Équipements Scolaires KOUPENTOUM
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#aboutModal">
+                            <i class="bi bi-info-circle"></i> À propos
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#catalogueModal">
+                            <i class="bi bi-table"></i> Catalogue
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#graphiqueModal">
+                            <i class="bi bi-bar-chart"></i> Statistiques
+                        </a>
+                    </li>
+                </ul>
+                <div class="d-flex">
+                    <button class="nav-icon-btn" onclick="precedent()" title="Précédent">
+                        <i class="bi bi-arrow-left-circle"></i>
+                    </button>
+                    <button class="nav-icon-btn" onclick="suivant()" title="Suivant">
+                        <i class="bi bi-arrow-right-circle"></i>
+                    </button>
+                    <button class="nav-icon-btn" onclick="vueGlobale()" title="Vue globale">
+                        <i class="bi bi-globe2"></i>
+                    </button>
+                    <button class="nav-icon-btn" onclick="downloadDrawnData()" title="Télécharger">
+                        <i class="bi bi-download"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="main-container">
+        <button class="toggle-btn toggle-btn-left" onclick="toggleLeftPanel()">
+            <i class="bi bi-chevron-right" id="leftToggleIcon"></i>
+        </button>
+
+        <div class="left-panel" id="leftPanel">
+            <div class="panel-header">
+                <h5><i class="bi bi-layers"></i> Gestion des Couches</h5>
+            </div>
+            <div class="panel-content">
+                <div class="section">
+                    <div class="section-title">
+                        <i class="bi bi-map"></i> Couches Disponibles
+                    </div>
+                    <div class="layer-item">
+                        <input class="form-check-input" type="checkbox" id="layerLocalites" checked onchange="toggleLayer('localites')">
+                        <span class="layer-symbol symbol-point" style="background: #dc3545;"></span>
+                        <label for="layerLocalites">Localités</label>
+                        <span class="layer-count" id="countLocalites">0</span>
+                    </div>
+                    <div class="layer-item">
+                        <input class="form-check-input" type="checkbox" id="layerEcoles" checked onchange="toggleLayer('ecoles')">
+                        <span class="layer-symbol symbol-point" style="background: #28a745;"></span>
+                        <label for="layerEcoles">Écoles</label>
+                        <span class="layer-count" id="countEcoles">0</span>
+                    </div>
+                    <div class="layer-item">
+                        <input class="form-check-input" type="checkbox" id="layerRoutes" checked onchange="toggleLayer('routes')">
+                        <span class="layer-symbol symbol-line"></span>
+                        <label for="layerRoutes">Routes</label>
+                        <span class="layer-count" id="countRoutes">0</span>
+                    </div>
+                    <div class="layer-item">
+                        <input class="form-check-input" type="checkbox" id="layerArrondissements" checked onchange="toggleLayer('arrondissements')">
+                        <span class="layer-symbol symbol-polygon" style="border-color: #6f42c1;"></span>
+                        <label for="layerArrondissements">Arrondissements</label>
+                        <span class="layer-count" id="countArrondissements">0</span>
+                    </div>
+                    <div class="layer-item">
+                        <input class="form-check-input" type="checkbox" id="layerDepartements" checked onchange="toggleLayer('departements')">
+                        <span class="layer-symbol symbol-polygon" style="border-color: #007bff;"></span>
+                        <label for="layerDepartements">Département</label>
+                        <span class="layer-count" id="countDepartements">0</span>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">
+                        <i class="bi bi-search"></i> Requête Attributaire
+                    </div>
+                    <select class="form-select mb-2" id="attrQueryLayer">
+                        <option value="">Sélectionner une couche</option>
+                        <option value="localites">Localités</option>
+                        <option value="ecoles">Écoles</option>
+                    </select>
+                    <input type="text" class="form-control mb-2" id="attrQueryValue" placeholder="Rechercher...">
+                    <button class="btn btn-modern btn-sm w-100" onclick="executeAttributeQuery()">
+                        <i class="bi bi-search"></i> Rechercher
+                    </button>
+                    <div class="query-result" id="attrQueryResult"></div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">
+                        <i class="bi bi-bounding-box"></i> Requête Spatiale
+                    </div>
+                    <select class="form-select mb-2" id="spatialSourceLayer">
+                        <option value="">Couche source</option>
+                        <option value="localites">Localités</option>
+                        <option value="ecoles">Écoles</option>
+                        <option value="routes">Routes</option>
+                    </select>
+                    <select class="form-select mb-2" id="spatialOperator">
+                        <option value="within">À l'intérieur</option>
+                        <option value="intersects">Intersecte</option>
+                    </select>
+                    <select class="form-select mb-2" id="spatialTargetLayer">
+                        <option value="">Couche cible (polygone)</option>
+                        <option value="arrondissements">Arrondissements</option>
+                        <option value="departements">Département</option>
+                    </select>
+                    <button class="btn btn-modern btn-sm w-100" onclick="executeSpatialQuery()">
+                        <i class="bi bi-geo"></i> Analyser
+                    </button>
+                    <div class="query-result" id="spatialQueryResult"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="map"></div>
+
+        <button class="toggle-btn toggle-btn-right" onclick="toggleRightPanel()">
+            <i class="bi bi-chevron-left" id="rightToggleIcon"></i>
+        </button>
+
+        <div class="right-panel" id="rightPanel">
+            <div class="panel-header">
+                <h5><i class="bi bi-map-fill"></i> Fonds de Carte</h5>
+            </div>
+            <div class="panel-content">
+                <div class="section">
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="baseMap" id="osmRadio" checked onchange="changeBaseMap('osm')">
+                        <label class="form-check-label" for="osmRadio">OpenStreetMap</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="baseMap" id="satelliteRadio" onchange="changeBaseMap('satellite')">
+                        <label class="form-check-label" for="satelliteRadio">Satellite</label>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">
+                        <i class="bi bi-bookmark"></i> Légende
+                    </div>
+                    <div class="legend-item" id="legendLocalites">
+                        <span class="layer-symbol symbol-point" style="background: #dc3545;"></span>
+                        <span>Localités</span>
+                    </div>
+                    <div class="legend-item" id="legendEcoles">
+                        <span class="layer-symbol symbol-point" style="background: #28a745;"></span>
+                        <span>Écoles</span>
+                    </div>
+                    <div class="legend-item" id="legendRoutes">
+                        <span class="layer-symbol symbol-line"></span>
+                        <span>Routes</span>
+                    </div>
+                    <div class="legend-item" id="legendArrondissements">
+                        <span class="layer-symbol symbol-polygon" style="border-color: #6f42c1;"></span>
+                        <span>Arrondissements</span>
+                    </div>
+                    <div class="legend-item" id="legendDepartements">
+                        <span class="layer-symbol symbol-polygon" style="border-color: #007bff;"></span>
+                        <span>Département</span>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">
+                        <i class="bi bi-rulers"></i> Mesures
+                    </div>
+                    <button class="btn btn-modern btn-sm w-100 mb-2" onclick="startMeasureDistance()">
+                        <i class="bi bi-arrow-left-right"></i> Mesurer distance
+                    </button>
+                    <button class="btn btn-modern btn-sm w-100" onclick="startMeasureArea()">
+                        <i class="bi bi-bounding-box-circles"></i> Mesurer surface
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="aboutModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                    <h5 class="modal-title">À propos</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <h6>Projet SIG Web - Équipements Scolaires</h6>
+                    <p><strong>Département:</strong> KOUPENTOUM</p>
+                    <p><strong>Auteur:</strong> Ndeye Aissatou DIAGNE</p>
+                    <p><strong>Promotion:</strong> Licence 3-2025</p>
+                    <hr>
+                    <h6>Fonctionnalités</h6>
+                    <ul>
+                        <li>Gestion des couches (afficher/masquer)</li>
+                        <li>Requêtes attributaires</li>
+                        <li>Requêtes spatiales</li>
+                        <li>Outils de mesure (distance/surface)</li>
+                        <li>Navigation (précédent/suivant)</li>
+                        <li>Téléchargement des données</li>
+                        <li>Statistiques et graphiques</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="catalogueModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                    <h5 class="modal-title">Catalogue des données</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Couche</th>
+                                <th>Type</th>
+                                <th>Nombre</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Localités</td>
+                                <td>Points</td>
+                                <td><span id="catalogueLocalites">0</span></td>
+                            </tr>
+                            <tr>
+                                <td>Écoles</td>
+                                <td>Points</td>
+                                <td><span id="catalogueEcoles">0</span></td>
+                            </tr>
+                            <tr>
+                                <td>Routes</td>
+                                <td>Lignes</td>
+                                <td><span id="catalogueRoutes">0</span></td>
+                            </tr>
+                            <tr>
+                                <td>Arrondissements</td>
+                                <td>Polygones</td>
+                                <td><span id="catalogueArrondissements">0</span></td>
+                            </tr>
+                            <tr>
+                                <td>Département</td>
+                                <td>Polygones</td>
+                                <td><span id="catalogueDepartements">0</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="graphiqueModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                    <h5 class="modal-title">Statistiques</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <h6>Répartition des équipements</h6>
+                    <div style="height: 300px; margin: 20px 0;">
+                        <canvas id="chartEquipements"></canvas>
+                    </div>
+                    <h6 class="mt-4">Distribution par type</h6>
+                    <div style="height: 300px; margin: 20px 0;">
+                        <canvas id="chartDistribution"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const centerLat = 13.793;
+        const centerLon = -14.324;
+        const initialZoom = 10;
+
+        // Initialisation carte
+        const map = L.map('map').setView([centerLat, centerLon], initialZoom);
+
+        // Fonds de carte
+        const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
+
+        const satellite = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+            maxZoom: 20,
+            attribution: '© Google'
+        });
+
+        let currentBaseMap = osm;
+
+        // Couches de données
+        const layerLocalites = L.layerGroup().addTo(map);
+        const layerEcoles = L.layerGroup().addTo(map);
+        const layerRoutes = L.layerGroup().addTo(map);
+        const layerArrondissements = L.layerGroup().addTo(map);
+        const layerDepartements = L.layerGroup().addTo(map);
+
+        // Données brutes pour requêtes
+        let allData = {
+            localites: [],
+            ecoles: [],
+            routes: [],
+            arrondissements: [],
+            departements: []
+        };
+
+        // Liste pour navigation
+        let equipementsList = [];
+        let currentIndex = 0;
+
+        // Statistiques
+        let stats = {
+            localites: 0,
+            ecoles: 0,
+            routes: 0,
+            arrondissements: 0,
+            departements: 0
+        };
+
+        // Outils de dessin
+        const drawnItems = new L.FeatureGroup();
+        map.addLayer(drawnItems);
+
+        const drawControl = new L.Control.Draw({
+            position: 'topleft',
+            edit: {
+                featureGroup: drawnItems,
+                remove: true
+            },
+            draw: {
+                polygon: true,
+                polyline: true,
+                rectangle: true,
+                circle: true,
+                marker: true,
+                circlemarker: false
+            }
+        });
+        map.addControl(drawControl);
+
+        map.on('draw:created', function(e) {
+            drawnItems.addLayer(e.layer);
+        });
+
+        // Variables de mesure
+        let measureLayer = null;
+        let measureMode = null;
+
+        // Chargement des données
+        $.getJSON('data/localites.geojson', function(data) {
+            allData.localites = data.features;
+            L.geoJSON(data, {
+                pointToLayer: function(feature, latlng) {
+                    return L.circleMarker(latlng, {
+                        radius: 8,
+                        fillColor: "#dc3545",
+                        color: "#fff",
+                        weight: 2,
+                        opacity: 1,
+                        fillOpacity: 0.8
+                    });
+                },
+                onEachFeature: function(feature, layer) {
+                    const props = feature.properties;
+                    equipementsList.push({
+                        type: 'localite',
+                        layer: layer,
+                        latlng: layer.getLatLng(),
+                        properties: props
+                    });
+                    layer.bindPopup(`
+                        <div style="min-width: 200px;">
+                            <h5 style="color: #dc3545; margin-top: 0;">🏘️ ${props.nom || props.name || 'Localité'}</h5>
+                            <p><strong>Type:</strong> ${props.type || 'Localité'}</p>
+                            <p><strong>Population:</strong> ${props.population || 'N/A'}</p>
+                        </div>
+                    `);
+                }
+            }).addTo(layerLocalites);
+            stats.localites = data.features.length;
+            updateCounts();
+        });
+
+        $.getJSON('data/Ecoles.geojson', function(data) {
+            allData.ecoles = data.features;
+            L.geoJSON(data, {
+                pointToLayer: function(feature, latlng) {
+                    return L.circleMarker(latlng, {
+                        radius: 8,
+                        fillColor: "#28a745",
+                        color: "#fff",
+                        weight: 2,
+                        opacity: 1,
+                        fillOpacity: 0.8
+                    });
+                },
+                onEachFeature: function(feature, layer) {
+                    const props = feature.properties;
+                    equipementsList.push({
+                        type: 'ecole',
+                        layer: layer,
+                        latlng: layer.getLatLng(),
+                        properties: props
+                    });
+                    layer.bindPopup(`
+                        <div style="min-width: 200px;">
+                            <h5 style="color: #28a745; margin-top: 0;">🏫 ${props.nom || props.name || 'École'}</h5>
+                            <p><strong>Type:</strong> ${props.type || 'École'}</p>
+                            <p><strong>Adresse:</strong> ${props.adresse || 'N/A'}</p>
+                            <p><strong>Élèves:</strong> ${props.eleves || 'N/A'}</p>
+                        </div>
+                    `);
+                }
+            }).addTo(layerEcoles);
+            stats.ecoles = data.features.length;
+            updateCounts();
+        });
+
+        $.getJSON('data/Routes.geojson', function(data) {
+            allData.routes = data.features;
+            L.geoJSON(data, {
+                style: {
+                    color: "#fd7e14",
+                    weight: 3,
+                    opacity: 0.8
+                },
+                onEachFeature: function(feature, layer) {
+                    const props = feature.properties;
+                    allData.routes.push({layer: layer, properties: props});
+                    layer.bindPopup(`
+                        <div style="min-width: 200px;">
+                            <h5 style="color: #fd7e14; margin-top: 0;">🛣️ ${props.nom || props.name || 'Route'}</h5>
+                            <p><strong>Type:</strong> ${props.type || 'Route'}</p>
+                            <p><strong>Classe:</strong> ${props.classe || 'N/A'}</p>
+                        </div>
+                    `);
+                }
+            }).addTo(layerRoutes);
+            stats.routes = data.features.length;
+            updateCounts();
+        });
+
+        $.getJSON('data/Arrondissements.geojson', function(data) {
+            allData.arrondissements = data.features;
+            L.geoJSON(data, {
+                style: {
+                    color: "#6f42c1",
+                    weight: 2,
+                    fillColor: "#6f42c1",
+                    fillOpacity: 0.2
+                },
+                onEachFeature: function(feature, layer) {
+                    const props = feature.properties;
+                    layer.bindPopup(`
+                        <div style="min-width: 200px;">
+                            <h5 style="color: #6f42c1; margin-top: 0;">📍 ${props.nom || props.name || 'Arrondissement'}</h5>
+                            <p><strong>Type:</strong> Arrondissement</p>
+                            <p><strong>Population:</strong> ${props.population || 'N/A'}</p>
+                        </div>
+                    `);
+                }
+            }).addTo(layerArrondissements);
+            stats.arrondissements = data.features.length;
+            updateCounts();
+        });
+
+        $.getJSON('data/Departement.geojson', function(data) {
+            allData.departements = data.features;
+            L.geoJSON(data, {
+                style: {
+                    color: "#007bff",
+                    weight: 3,
+                    fillColor: "#007bff",
+                    fillOpacity: 0.15
+                },
+                onEachFeature: function(feature, layer) {
+                    const props = feature.properties;
+                    layer.bindPopup(`
+                        <div style="min-width: 200px;">
+                            <h5 style="color: #007bff; margin-top: 0;">🗺️ ${props.nom || props.name || 'Département'}</h5>
+                            <p><strong>Type:</strong> Département</p>
+                            <p><strong>Population:</strong> ${props.population || 'N/A'}</p>
+                        </div>
+                    `);
+                }
+            }).addTo(layerDepartements);
+            stats.departements = data.features.length;
+            updateCounts();
+            
+            // Vue initiale sur le département
+            setTimeout(() => {
+                if (layerDepartements.getLayers().length > 0) {
+                    map.fitBounds(layerDepartements.getBounds());
+                }
+            }, 500);
+        });
+
+        // Fonctions de gestion des panneaux
+        function toggleLeftPanel() {
+            const panel = document.getElementById('leftPanel');
+            const icon = document.getElementById('leftToggleIcon');
+            panel.classList.toggle('collapsed');
+            icon.className = panel.classList.contains('collapsed') ? 'bi bi-chevron-right' : 'bi bi-chevron-left';
+        }
+
+        function toggleRightPanel() {
+            const panel = document.getElementById('rightPanel');
+            const icon = document.getElementById('rightToggleIcon');
+            panel.classList.toggle('collapsed');
+            icon.className = panel.classList.contains('collapsed') ? 'bi bi-chevron-left' : 'bi bi-chevron-right';
+        }
+
+        // Gestion des couches (MISES À JOUR POUR LA LÉGENDE)
+        function toggleLayer(type) {
+            const layers = {
+                localites: layerLocalites,
+                ecoles: layerEcoles,
+                routes: layerRoutes,
+                arrondissements: layerArrondissements,
+                departements: layerDepartements
+            };
+            const capitalizedType = type.charAt(0).toUpperCase() + type.slice(1);
+            const checkbox = document.getElementById(`layer${capitalizedType}`);
+            // Sélectionner l'élément de légende correspondant
+            const legendItem = document.getElementById(`legend${capitalizedType}`);
+            
+            if (checkbox.checked) {
+                map.addLayer(layers[type]);
+                // Afficher l'élément dans la légende
+                if (legendItem) {
+                    legendItem.style.display = 'flex';
+                }
+            } else {
+                map.removeLayer(layers[type]);
+                // Masquer l'élément dans la légende
+                if (legendItem) {
+                    legendItem.style.display = 'none';
+                }
+            }
+        }
+
+        // Changement de fond de carte
+        function changeBaseMap(type) {
+            map.removeLayer(currentBaseMap);
+            currentBaseMap = type === 'osm' ? osm : satellite;
+            map.addLayer(currentBaseMap);
+        }
+
+        // Navigation
+        function precedent() {
+            if (equipementsList.length === 0) {
+                alert("Aucun équipement chargé");
+                return;
+            }
+            currentIndex = (currentIndex - 1 + equipementsList.length) % equipementsList.length;
+            naviguerVers(currentIndex);
+        }
+
+        function suivant() {
+            if (equipementsList.length === 0) {
+                alert("Aucun équipement chargé");
+                return;
+            }
+            currentIndex = (currentIndex + 1) % equipementsList.length;
+            naviguerVers(currentIndex);
+        }
+
+        function naviguerVers(index) {
+            const item = equipementsList[index];
+            map.setView(item.latlng, 16);
+            item.layer.openPopup();
+        }
+
+        function vueGlobale() {
+            const allLayers = L.featureGroup([
+                layerLocalites, layerEcoles, layerRoutes, 
+                layerArrondissements, layerDepartements
+            ]);
+            if (allLayers.getLayers().length > 0) {
+                map.fitBounds(allLayers.getBounds());
+            }
+        }
+
+        // Requête attributaire
+        function executeAttributeQuery() {
+            const layer = document.getElementById('attrQueryLayer').value;
+            const value = document.getElementById('attrQueryValue').value.toLowerCase();
+            const resultDiv = document.getElementById('attrQueryResult');
+            
+            if (!layer || !value) {
+                alert("Veuillez sélectionner une couche et saisir une valeur");
+                return;
+            }
+
+            const results = [];
+            const features = allData[layer];
+            
+            features.forEach((feature, index) => {
+                const props = feature.properties;
+                const searchText = JSON.stringify(props).toLowerCase();
+                
+                if (searchText.includes(value)) {
+                    results.push({
+                        index: index,
+                        props: props,
+                        coords: feature.geometry.coordinates
+                    });
+                }
+            });
+
+            resultDiv.innerHTML = '';
+            if (results.length === 0) {
+                resultDiv.innerHTML = '<p class="text-muted">Aucun résultat trouvé</p>';
+            } else {
+                results.forEach(result => {
+                    const div = document.createElement('div');
+                    div.className = 'result-item';
+                    div.innerHTML = `<strong>${result.props.nom || result.props.name || 'Sans nom'}</strong><br>
+                                    <small>${JSON.stringify(result.props).substring(0, 100)}...</small>`;
+                    div.onclick = () => {
+                        const coords = result.coords;
+                        map.setView([coords[1], coords[0]], 16);
+                    };
+                    resultDiv.appendChild(div);
+                });
+            }
+        }
+
+        // Requête spatiale
+        function executeSpatialQuery() {
+            const sourceLayer = document.getElementById('spatialSourceLayer').value;
+            const operator = document.getElementById('spatialOperator').value;
+            const targetLayer = document.getElementById('spatialTargetLayer').value;
+            const resultDiv = document.getElementById('spatialQueryResult');
+            
+            if (!sourceLayer || !targetLayer) {
+                alert("Veuillez sélectionner les couches source et cible");
+                return;
+            }
+
+            const results = [];
+            const sourceFeatures = allData[sourceLayer];
+            const targetFeatures = allData[targetLayer];
+
+            sourceFeatures.forEach(sourceFeature => {
+                targetFeatures.forEach(targetFeature => {
+                    const sourceGeom = sourceFeature.geometry;
+                    const targetGeom = targetFeature.geometry;
+                    
+                    let isMatch = false;
+                    
+                    if (operator === 'within') {
+                        isMatch = isPointInPolygon(sourceGeom, targetGeom);
+                    } else if (operator === 'intersects') {
+                        isMatch = geometriesIntersect(sourceGeom, targetGeom);
+                    }
+                    
+                    if (isMatch) {
+                        results.push({
+                            source: sourceFeature.properties,
+                            target: targetFeature.properties
+                        });
+                    }
+                });
+            });
+
+            resultDiv.innerHTML = '';
+            if (results.length === 0) {
+                resultDiv.innerHTML = '<p class="text-muted">Aucun résultat trouvé</p>';
+            } else {
+                resultDiv.innerHTML = `<p><strong>${results.length} résultat(s) trouvé(s)</strong></p>`;
+                results.slice(0, 10).forEach(result => {
+                    const div = document.createElement('div');
+                    div.className = 'result-item';
+                    div.innerHTML = `<strong>${result.source.nom || result.source.name || 'Source'}</strong> → 
+                                    ${result.target.nom || result.target.name || 'Cible'}`;
+                    resultDiv.appendChild(div);
+                });
+            }
+        }
+
+        // Vérification point dans polygone
+        function isPointInPolygon(pointGeom, polygonGeom) {
+            if (pointGeom.type !== 'Point' || polygonGeom.type !== 'Polygon') return false;
+            
+            const point = pointGeom.coordinates;
+            const polygon = polygonGeom.coordinates[0];
+            
+            let inside = false;
+            for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+                const xi = polygon[i][0], yi = polygon[i][1];
+                const xj = polygon[j][0], yj = polygon[j][1];
+                
+                const intersect = ((yi > point[1]) !== (yj > point[1]))
+                    && (point[0] < (xj - xi) * (point[1] - yi) / (yj - yi) + xi);
+                if (intersect) inside = !inside;
+            }
+            return inside;
+        }
+
+        // Vérification intersection
+        function geometriesIntersect(geom1, geom2) {
+            // Simplification: vérifier si les bounding boxes se chevauchent
+            const bbox1 = getBoundingBox(geom1);
+            const bbox2 = getBoundingBox(geom2);
+            
+            return !(bbox1.maxX < bbox2.minX || bbox2.maxX < bbox1.minX ||
+                    bbox1.maxY < bbox2.minY || bbox2.maxY < bbox1.minY);
+        }
+
+        function getBoundingBox(geom) {
+            let coords = [];
+            if (geom.type === 'Point') {
+                coords = [geom.coordinates];
+            } else if (geom.type === 'LineString') {
+                coords = geom.coordinates;
+            } else if (geom.type === 'Polygon') {
+                coords = geom.coordinates[0];
+            }
+            
+            const xs = coords.map(c => c[0]);
+            const ys = coords.map(c => c[1]);
+            
+            return {
+                minX: Math.min(...xs),
+                maxX: Math.max(...xs),
+                minY: Math.min(...ys),
+                maxY: Math.max(...ys)
+            };
+        }
+
+        // Mesures
+        function startMeasureDistance() {
+            if (measureLayer) {
+                map.removeLayer(measureLayer);
+            }
+            
+            measureMode = 'distance';
+            measureLayer = L.polyline([], {
+                color: '#ff0000',
+                weight: 3
+            }).addTo(map);
+            
+            alert("Cliquez sur la carte pour mesurer la distance. Double-cliquez pour terminer.");
+            
+            map.on('click', onMeasureClick);
+            map.on('dblclick', endMeasure);
+        }
+
+        function startMeasureArea() {
+            if (measureLayer) {
+                map.removeLayer(measureLayer);
+            }
+            
+            measureMode = 'area';
+            measureLayer = L.polygon([], {
+                color: '#ff0000',
+                weight: 3,
+                fillOpacity: 0.2
+            }).addTo(map);
+            
+            alert("Cliquez sur la carte pour dessiner un polygone. Double-cliquez pour terminer.");
+            
+            map.on('click', onMeasureClick);
+            map.on('dblclick', endMeasure);
+        }
+
+        function onMeasureClick(e) {
+            if (!measureLayer) return;
+            
+            const latlngs = measureLayer.getLatLngs();
+            if (measureMode === 'distance') {
+                latlngs.push(e.latlng);
+                measureLayer.setLatLngs(latlngs);
+            } else if (measureMode === 'area') {
+                latlngs[0] = latlngs[0] || [];
+                latlngs[0].push(e.latlng);
+                measureLayer.setLatLngs(latlngs);
+            }
+        }
+
+        function endMeasure(e) {
+            map.off('click', onMeasureClick);
+            map.off('dblclick', endMeasure);
+            
+            if (measureMode === 'distance') {
+                const distance = calculateDistance(measureLayer.getLatLngs());
+                alert(`Distance: ${distance.toFixed(2)} km`);
+            } else if (measureMode === 'area') {
+                const area = L.GeometryUtil.geodesicArea(measureLayer.getLatLngs()[0]);
+                alert(`Surface: ${(area / 1000000).toFixed(2)} km²`);
+            }
+            
+            measureMode = null;
+        }
+
+        function calculateDistance(latlngs) {
+            let distance = 0;
+            for (let i = 0; i < latlngs.length - 1; i++) {
+                distance += latlngs[i].distanceTo(latlngs[i + 1]);
+            }
+            return distance / 1000; // en km
+        }
+
+        // Téléchargement
+        function downloadDrawnData() {
+            if (drawnItems.getLayers().length === 0) {
+                alert("Aucune donnée à télécharger. Dessinez d'abord sur la carte.");
+                return;
+            }
+
+            const data = drawnItems.toGeoJSON();
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 2));
+
+            const downloadLink = document.createElement('a');
+            downloadLink.setAttribute("href", dataStr);
+            downloadLink.setAttribute("download", "mes_donnees.geojson");
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            downloadLink.remove();
+
+            alert("✅ Fichier GeoJSON téléchargé !");
+        }
+
+        // Mise à jour des compteurs
+        function updateCounts() {
+            document.getElementById('countLocalites').textContent = stats.localites;
+            document.getElementById('countEcoles').textContent = stats.ecoles;
+            document.getElementById('countRoutes').textContent = stats.routes;
+            document.getElementById('countArrondissements').textContent = stats.arrondissements;
+            document.getElementById('countDepartements').textContent = stats.departements;
+            
+            document.getElementById('catalogueLocalites').textContent = stats.localites;
+            document.getElementById('catalogueEcoles').textContent = stats.ecoles;
+            document.getElementById('catalogueRoutes').textContent = stats.routes;
+            document.getElementById('catalogueArrondissements').textContent = stats.arrondissements;
+            document.getElementById('catalogueDepartements').textContent = stats.departements;
+            
+            updateCharts();
+        }
+
+        // Graphiques
+        let chartEquipements, chartDistribution;
+
+        function initCharts() {
+            const ctx1 = document.getElementById('chartEquipements');
+            if (ctx1) {
+                chartEquipements = new Chart(ctx1, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Localités', 'Écoles', 'Routes', 'Arrondissements', 'Département'],
+                        datasets: [{
+                            data: [0, 0, 0, 0, 0],
+                            backgroundColor: [
+                                'rgba(220, 53, 69, 0.8)',
+                                'rgba(40, 167, 69, 0.8)',
+                                'rgba(253, 126, 20, 0.8)',
+                                'rgba(111, 66, 193, 0.8)',
+                                'rgba(0, 123, 255, 0.8)'
+                            ],
+                            borderColor: '#fff',
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
+                        }
+                    }
+                });
+            }
+
+            const ctx2 = document.getElementById('chartDistribution');
+            if (ctx2) {
+                chartDistribution = new Chart(ctx2, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Localités', 'Écoles', 'Routes', 'Arrondissements', 'Département'],
+                        datasets: [{
+                            label: 'Nombre d\'éléments',
+                            data: [0, 0, 0, 0, 0],
+                            backgroundColor: [
+                                'rgba(220, 53, 69, 0.8)',
+                                'rgba(40, 167, 69, 0.8)',
+                                'rgba(253, 126, 20, 0.8)',
+                                'rgba(111, 66, 193, 0.8)',
+                                'rgba(0, 123, 255, 0.8)'
+                            ]
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    stepSize: 1
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        function updateCharts() {
+            const data = [stats.localites, stats.ecoles, stats.routes, stats.arrondissements, stats.departements];
+
+            if (chartEquipements) {
+                chartEquipements.data.datasets[0].data = data;
+                chartEquipements.update();
+            }
+
+            if (chartDistribution) {
+                chartDistribution.data.datasets[0].data = data;
+                chartDistribution.update();
+            }
+        }
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', function() {
+            initCharts();
+            L.control.scale({ imperial: false, position: 'bottomleft' }).addTo(map);
+        });
+
+        console.log("✅ Application SIG Web initialisée");
+    </script>
+</body>
+</html>
